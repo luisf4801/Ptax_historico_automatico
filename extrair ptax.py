@@ -110,3 +110,34 @@ log.info("=" * 55)
 df = download_ptax(START, END, boletim=BOLETIM)
 
 
+
+
+
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Filtrar para o período moderno (pós-mudança metodológica do BCB)
+df_moderno = df[df['timestamp'] >= '2011-07-01'].copy()
+
+# Preparação dos dados
+df_plot = df_moderno[df_moderno['boletim'].isin(['Abertura', 'Fechamento'])].copy()
+df_pivot = df_plot.pivot(index='timestamp', columns='boletim', values='mid')
+variancia_diaria = df_moderno.groupby(df_moderno['timestamp'].dt.date)['mid'].var().dropna()
+
+# --- Plotagem ---
+fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 10))
+
+# Gráfico 1: Abertura vs Fechamento (Focado no período estável)
+if not df_pivot.empty:
+    ax1.plot(df_pivot.index, df_pivot['Abertura'].ffill(), label='Abertura', alpha=0.6)
+    ax1.plot(df_pivot.index, df_pivot['Fechamento'].ffill(), label='Fechamento', alpha=0.8,linestyle=':')
+    ax1.set_title('PTAX USD/BRL: Dinâmica Pós-2011', fontsize=14)
+    ax1.legend()
+
+# Gráfico 2: Variância Intradia (Escala ajustada)
+ax2.fill_between(variancia_diaria.index, variancia_diaria, color='crimson', alpha=0.3)
+ax2.set_title('Volatilidade Intradia (Pós-2011)', fontsize=14)
+ax2.set_ylabel('Variância entre Boletins')
+
+plt.tight_layout()
+plt.show()
